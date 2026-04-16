@@ -34,13 +34,13 @@ let CategoriesService = class CategoriesService {
         }
         return category;
     }
-    async create(data) {
-        const category = this.categoryRepo.create(data);
+    async create(dto) {
+        const category = this.categoryRepo.create(dto);
         return this.categoryRepo.save(category);
     }
-    async update(id, data) {
+    async update(id, dto) {
         const category = await this.findOne(id);
-        Object.assign(category, data);
+        Object.assign(category, dto);
         return this.categoryRepo.save(category);
     }
     async remove(id) {
