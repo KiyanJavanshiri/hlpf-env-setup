@@ -1,99 +1,72 @@
 ## Student
-
 - Name: Джаваншірі Кіян
 - Group: 232/1 оф
-
-## Практичне заняття №3 — CRUD REST API для MiniShop
-
+ 
+## Практичне заняття №4 — DTO + class-validator + Pipes
+ 
 ### Структура репозиторію
-
 ```
 .
 ├── src/
 │   ├── categories/
+│   │   ├── dto/
+│   │   │   ├── create-category.dto.ts
+│   │   │   └── update-category.dto.ts
 │   │   ├── category.entity.ts
 │   │   ├── categories.module.ts
 │   │   ├── categories.service.ts
 │   │   └── categories.controller.ts
 │   ├── products/
+│   │   ├── dto/
+│   │   │   ├── create-product.dto.ts
+│   │   │   └── update-product.dto.ts
 │   │   ├── product.entity.ts
 │   │   ├── products.module.ts
 │   │   ├── products.service.ts
 │   │   └── products.controller.ts
+│   ├── common/
+│   │   └── pipes/
+│   │   	└── trim.pipe.ts
 │   ├── migrations/
-│   │   ├── 1700000001-CreateTables.ts
-│   │   └── <timestamp>-AddIsActiveToProducts.ts
 │   ├── data-source.ts
+│   ├── main.ts
 │   └── app.module.ts
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
 ```
-
+ 
 ### Запуск проекту
-
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
-
-### API Endpoints
-
-| Method | URL                 | Опис               |
-| ------ | ------------------- | ------------------ |
-| GET    | /api/categories     | Список категорій   |
-| GET    | /api/categories/:id | Одна категорія     |
-| POST   | /api/categories     | Створити категорію |
-| PATCH  | /api/categories/:id | Оновити категорію  |
-| DELETE | /api/categories/:id | Видалити категорію |
-| GET    | /api/products       | Список продуктів   |
-| GET    | /api/products/:id   | Один продукт       |
-| POST   | /api/products       | Створити продукт   |
-| PATCH  | /api/products/:id   | Оновити продукт    |
-| DELETE | /api/products/:id   | Видалити продукт   |
-
-### Перевірка міграцій
-
+### Тест валідації — порожнє ім'я категорії
 ```text
-<вивід docker compose exec postgres psql -U nestuser -d nestdb -c "\dt">
-
-List of relations
- Schema |    Name    | Type  |  Owner
---------+------------+-------+----------
- public | categories | table | nestuser
- public | migrations | table | nestuser
- public | products   | table | nestuser
+<вивід curl POST /api/categories з {"name": ""}>
+{"message":["name must be longer than or equal to 2 characters"],"error":"Bad Request","statusCode":400}
 ```
-
-### Тест створення категорії
-
+ 
+### Тест валідації — від'ємна ціна продукту
 ```text
-<вивід curl POST /api/categories>
-1. POST /api/categories -> {"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"}
-
-2. POST /api/categories 2 -> {"id":2,"name":"Accessories","description":null,"createdAt":"2026-04-05T15:10:27.728Z"}
+<вивід curl POST /api/products з {"name": "Test", "price": -5}>
+{"message":["price must not be less than 0.01"],"error":"Bad Request","statusCode":400}
 ```
-
-### Тест створення продукту
-
+ 
+### Тест валідації — зайве поле
 ```text
-<вивід curl POST /api/products>
-
-POST /api/products -> {"id":1,"name":"iPhone 15","description":null,"price":999.99,"stock":50,"isActive":true,"category":{"id":1},"createdAt":"2026-04-05T15:12:31.135Z","updatedAt":"2026-04-05T15:12:31.135Z"}
+<вивід curl POST /api/categories з {"name": "Test", "isAdmin": true}>
+{"message":["property isAdmin should not exist"],"error":"Bad Request","statusCode":400}
 ```
-
-### Тест отримання продуктів
-
+ 
+### Тест TrimPipe
 ```text
-<вивід curl GET /api/products>
-
-GET /api/products -> [{"id":1,"name":"iPhone 15","description":null,"price":"999.99","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-04-05T15:12:31.135Z","updatedAt":"2026-04-05T15:12:31.135Z"},{"id":2,"name":"USB Cable","description":null,"price":"9.99","stock":200,"isActive":true,"category":null,"createdAt":"2026-04-05T15:12:53.400Z","updatedAt":"2026-04-05T15:12:53.400Z"}]
+<вивід curl POST /api/categories з {"name": "  Trimmed  "}>
+{"message":["name must be longer than or equal to 2 characters"],"error":"Bad Request","statusCode":400}
 ```
-
-### Тест 404
-
+ 
+### Тест валідне створення продукту
 ```text
-<вивід curl GET /api/products/999>
-
-GET /api/products/999 -> {"message":"Product #999 not found","error":"Not Found","statusCode":404}
+<вивід curl POST /api/products з валідними даними>
+{"id":3,"name":"iPhone 16","description":null,"price":999.99,"stock":50,"isActive":true,"category":{"id":1},"createdAt":"2026-04-16T06:26:51.332Z","updatedAt":"2026-04-16T06:26:51.332Z"}
 ```
