@@ -2,31 +2,36 @@
 - Name: Джаваншірі Кіян
 - Group: 232/1 оф
  
-## Практичне заняття №4 — DTO + class-validator + Pipes
+## Практичне заняття №5 — JWT Authentication + Guards + RBAC
  
 ### Структура репозиторію
 ```
 .
 ├── src/
-│   ├── categories/
+│   ├── auth/
 │   │   ├── dto/
-│   │   │   ├── create-category.dto.ts
-│   │   │   └── update-category.dto.ts
-│   │   ├── category.entity.ts
-│   │   ├── categories.module.ts
-│   │   ├── categories.service.ts
-│   │   └── categories.controller.ts
-│   ├── products/
-│   │   ├── dto/
-│   │   │   ├── create-product.dto.ts
-│   │   │   └── update-product.dto.ts
-│   │   ├── product.entity.ts
-│   │   ├── products.module.ts
-│   │   ├── products.service.ts
-│   │   └── products.controller.ts
+│   │   │   ├── register.dto.ts
+│   │   │   └── login.dto.ts
+│   │   ├── auth.module.ts
+│   │   ├── auth.service.ts
+│   │   └── auth.controller.ts
+│   ├── users/
+│   │   ├── user.entity.ts
+│   │   ├── users.module.ts
+│   │   └── users.service.ts
 │   ├── common/
+│   │   ├── enums/
+│   │   │   └── role.enum.ts
+│   │   ├── guards/
+│   │   │   ├── jwt-auth.guard.ts
+│   │   │   └── roles.guard.ts
+│   │   ├── decorators/
+│   │   │   ├── current-user.decorator.ts
+│   │   │   └── roles.decorator.ts
 │   │   └── pipes/
 │   │   	└── trim.pipe.ts
+│   ├── categories/ ...
+│   ├── products/ ...
 │   ├── migrations/
 │   ├── data-source.ts
 │   ├── main.ts
@@ -41,32 +46,45 @@
 cp .env.example .env
 docker compose up --build
 ```
-### Тест валідації — порожнє ім'я категорії
+ 
+### API Endpoints
+| Method | URL | Auth | Role |
+|--------|-----|------|------|
+| POST | /auth/register | - | - |
+| POST | /auth/login | - | - |
+| GET | /api/categories | - | - |
+| POST | /api/categories | JWT | admin |
+| GET | /api/products | - | - |
+| POST | /api/products | JWT | admin |
+| PATCH | /api/products/:id | JWT | admin |
+| DELETE | /api/products/:id | JWT | admin |
+ 
+### Тест реєстрації
 ```text
-<вивід curl POST /api/categories з {"name": ""}>
-{"message":["name must be longer than or equal to 2 characters"],"error":"Bad Request","statusCode":400}
+<вивід curl POST /auth/register>
+{"id":2,"email":"user@test.com","name":"Test User","role":"user","createdAt":"2026-04-26T12:48:45.779Z"}
 ```
  
-### Тест валідації — від'ємна ціна продукту
+### Тест логіну
 ```text
-<вивід curl POST /api/products з {"name": "Test", "price": -5}>
-{"message":["price must not be less than 0.01"],"error":"Bad Request","statusCode":400}
+<вивід curl POST /auth/login>
+{"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoidXNlckB0ZXN0LmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc3MjA3NzcwLCJleHAiOjE3NzcyMTEzNzB9.dMKcEpXGCZ4ZtBZJSxeR59LBMrz0naRvYEYtMvl9MNQ"}
 ```
  
-### Тест валідації — зайве поле
+### Тест 401 — запит без токена
 ```text
-<вивід curl POST /api/categories з {"name": "Test", "isAdmin": true}>
-{"message":["property isAdmin should not exist"],"error":"Bad Request","statusCode":400}
+<вивід curl POST /api/products без Authorization>
+{"message":"Missing authorization token","error":"Unauthorized","statusCode":401}
 ```
  
-### Тест TrimPipe
+### Тест 403 — запит з роллю user
 ```text
-<вивід curl POST /api/categories з {"name": "  Trimmed  "}>
-{"message":["name must be longer than or equal to 2 characters"],"error":"Bad Request","statusCode":400}
+<вивід curl POST /api/products з токеном user>
+{"message":"Insufficient permissions","error":"Forbidden","statusCode":403}
 ```
  
-### Тест валідне створення продукту
+### Тест успішного створення від admin
 ```text
-<вивід curl POST /api/products з валідними даними>
-{"id":3,"name":"iPhone 16","description":null,"price":999.99,"stock":50,"isActive":true,"category":{"id":1},"createdAt":"2026-04-16T06:26:51.332Z","updatedAt":"2026-04-16T06:26:51.332Z"}
+<вивід curl POST /api/products з токеном admin>
+{"id":4,"name":"MacBook Pro","description":null,"price":2499.99,"stock":10,"isActive":true,"category":null,"createdAt":"2026-04-26T12:54:50.572Z","updatedAt":"2026-04-26T12:54:50.572Z"}
 ```
