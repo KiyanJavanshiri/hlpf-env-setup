@@ -6,21 +6,19 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ProductsModule = void 0;
+exports.UsersModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const product_entity_1 = require("./product.entity");
-const products_service_1 = require("./products.service");
-const products_controller_1 = require("./products.controller");
-const auth_module_1 = require("../auth/auth.module");
-let ProductsModule = class ProductsModule {
+const user_entity_1 = require("./user.entity");
+const users_service_1 = require("./users.service");
+let UsersModule = class UsersModule {
 };
-exports.ProductsModule = ProductsModule;
-exports.ProductsModule = ProductsModule = __decorate([
+exports.UsersModule = UsersModule;
+exports.UsersModule = UsersModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([product_entity_1.Product]), auth_module_1.AuthModule],
-        controllers: [products_controller_1.ProductsController],
-        providers: [products_service_1.ProductsService],
+        imports: [typeorm_1.TypeOrmModule.forFeature([user_entity_1.User])],
+        providers: [users_service_1.UsersService],
+        exports: [users_service_1.UsersService],
     })
-], ProductsModule);
-//# sourceMappingURL=products.module.js.map
+], UsersModule);
+//# sourceMappingURL=users.module.js.map
