@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
+const openapi = require("@nestjs/swagger");
 const typeorm_1 = require("typeorm");
 const role_enum_1 = require("../common/enums/role.enum");
 let User = class User {
@@ -19,6 +20,9 @@ let User = class User {
     name;
     role;
     createdAt;
+    static _OPENAPI_METADATA_FACTORY() {
+        return { id: { required: true, type: () => Number }, email: { required: true, type: () => String }, passwordHash: { required: true, type: () => String }, name: { required: true, type: () => String }, role: { required: true, enum: require("../common/enums/role.enum").Role }, createdAt: { required: true, type: () => Date } };
+    }
 };
 exports.User = User;
 __decorate([
