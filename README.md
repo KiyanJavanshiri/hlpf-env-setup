@@ -2,23 +2,16 @@
 - Name: Джаваншірі Кіян
 - Group: 232/1 оф
  
-## Практичне заняття №5 — JWT Authentication + Guards + RBAC
+## Практичне заняття №6 — Interceptors + Exception Filters + Swagger
  
 ### Структура репозиторію
 ```
 .
 ├── src/
-│   ├── auth/
-│   │   ├── dto/
-│   │   │   ├── register.dto.ts
-│   │   │   └── login.dto.ts
-│   │   ├── auth.module.ts
-│   │   ├── auth.service.ts
-│   │   └── auth.controller.ts
-│   ├── users/
-│   │   ├── user.entity.ts
-│   │   ├── users.module.ts
-│   │   └── users.service.ts
+│   ├── auth/ ...
+│   ├── users/ ...
+│   ├── categories/ ...
+│   ├── products/ ...
 │   ├── common/
 │   │   ├── enums/
 │   │   │   └── role.enum.ts
@@ -28,14 +21,17 @@
 │   │   ├── decorators/
 │   │   │   ├── current-user.decorator.ts
 │   │   │   └── roles.decorator.ts
+│   │   ├── interceptors/
+│   │   │   ├── logging.interceptor.ts
+│   │   │   └── transform.interceptor.ts
+│   │   ├── filters/
+│   │   │   └── http-exception.filter.ts
 │   │   └── pipes/
 │   │   	└── trim.pipe.ts
-│   ├── categories/ ...
-│   ├── products/ ...
 │   ├── migrations/
-│   ├── data-source.ts
 │   ├── main.ts
 │   └── app.module.ts
+├── swagger-screenshot.png
 ├── Dockerfile
 ├── docker-compose.yml
 └── README.md
@@ -47,44 +43,41 @@ cp .env.example .env
 docker compose up --build
 ```
  
-### API Endpoints
-| Method | URL | Auth | Role |
-|--------|-----|------|------|
-| POST | /auth/register | - | - |
-| POST | /auth/login | - | - |
-| GET | /api/categories | - | - |
-| POST | /api/categories | JWT | admin |
-| GET | /api/products | - | - |
-| POST | /api/products | JWT | admin |
-| PATCH | /api/products/:id | JWT | admin |
-| DELETE | /api/products/:id | JWT | admin |
+### Swagger UI
+http://localhost:3000/api/docs
  
-### Тест реєстрації
-```text
-<вивід curl POST /auth/register>
-{"id":2,"email":"user@test.com","name":"Test User","role":"user","createdAt":"2026-04-26T12:48:45.779Z"}
+![Swagger](swagger-screenshot.png)
+
+### Формат успішної відповіді
+```json
+{
+  "data": { ... },
+  "statusCode": 200,
+  "timestamp": "2025-01-15T10:30:00.000Z"
+}
 ```
  
-### Тест логіну
-```text
-<вивід curl POST /auth/login>
-{"accessToken":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjIsImVtYWlsIjoidXNlckB0ZXN0LmNvbSIsInJvbGUiOiJ1c2VyIiwiaWF0IjoxNzc3MjA3NzcwLCJleHAiOjE3NzcyMTEzNzB9.dMKcEpXGCZ4ZtBZJSxeR59LBMrz0naRvYEYtMvl9MNQ"}
+### Формат помилки
+```json
+{
+  "error": {
+	"code": 400,
+	"message": "Validation failed",
+	"details": ["name must be longer..."],
+	"traceId": "a1b2c3..."
+  },
+  "timestamp": "2025-01-15T10:31:00.000Z"
+}
 ```
  
-### Тест 401 — запит без токена
+### Приклад логів (LoggingInterceptor)
 ```text
-<вивід curl POST /api/products без Authorization>
-{"message":"Missing authorization token","error":"Unauthorized","statusCode":401}
+<вивід docker compose logs з рядками [HTTP] GET /api/products ...>
+LOG [HTTP] GET /api/products — 200 — 11ms
 ```
  
-### Тест 403 — запит з роллю user
+### Тест помилки з traceId
 ```text
-<вивід curl POST /api/products з токеном user>
-{"message":"Insufficient permissions","error":"Forbidden","statusCode":403}
-```
- 
-### Тест успішного створення від admin
-```text
-<вивід curl POST /api/products з токеном admin>
-{"id":4,"name":"MacBook Pro","description":null,"price":2499.99,"stock":10,"isActive":true,"category":null,"createdAt":"2026-04-26T12:54:50.572Z","updatedAt":"2026-04-26T12:54:50.572Z"}
+<вивід curl GET /api/products/999>
+{"error":{"code":404,"message":"Product #999 not found","traceId":"d294bc70-51e3-4424-aef4-e91b3daf33a8"},"timestamp":"2026-05-04T13:22:03.621Z"}
 ```
