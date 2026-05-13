@@ -2,82 +2,53 @@
 - Name: Джаваншірі Кіян
 - Group: 232/1 оф
  
-## Практичне заняття №6 — Interceptors + Exception Filters + Swagger
- 
-### Структура репозиторію
-```
-.
-├── src/
-│   ├── auth/ ...
-│   ├── users/ ...
-│   ├── categories/ ...
-│   ├── products/ ...
-│   ├── common/
-│   │   ├── enums/
-│   │   │   └── role.enum.ts
-│   │   ├── guards/
-│   │   │   ├── jwt-auth.guard.ts
-│   │   │   └── roles.guard.ts
-│   │   ├── decorators/
-│   │   │   ├── current-user.decorator.ts
-│   │   │   └── roles.decorator.ts
-│   │   ├── interceptors/
-│   │   │   ├── logging.interceptor.ts
-│   │   │   └── transform.interceptor.ts
-│   │   ├── filters/
-│   │   │   └── http-exception.filter.ts
-│   │   └── pipes/
-│   │   	└── trim.pipe.ts
-│   ├── migrations/
-│   ├── main.ts
-│   └── app.module.ts
-├── swagger-screenshot.png
-├── Dockerfile
-├── docker-compose.yml
-└── README.md
-```
+## Практичне заняття №7 — Redis + Pagination + Filtering
  
 ### Запуск проекту
 ```bash
 cp .env.example .env
 docker compose up --build
+docker compose run --rm app npm run seed
 ```
  
-### Swagger UI
-http://localhost:3000/api/docs
+### API: GET /api/products
  
-![Swagger](swagger-screenshot.png)
-
-### Формат успішної відповіді
-```json
-{
-  "data": { ... },
-  "statusCode": 200,
-  "timestamp": "2025-01-15T10:30:00.000Z"
-}
-```
+| Параметр | Тип | Default | Опис |
+|----------|-----|---------|------|
+| page | number | 1 | Номер сторінки |
+| pageSize | number | 10 | Елементів на сторінку (max 100) |
+| sort | string | createdAt | Поле сортування |
+| order | asc/desc | desc | Напрямок |
+| categoryId | number | - | Фільтр за категорією |
+| minPrice | number | - | Мінімальна ціна |
+| maxPrice | number | - | Максимальна ціна |
+| search | string | - | Пошук за назвою (ILIKE) |
  
-### Формат помилки
-```json
-{
-  "error": {
-	"code": 400,
-	"message": "Validation failed",
-	"details": ["name must be longer..."],
-	"traceId": "a1b2c3..."
-  },
-  "timestamp": "2025-01-15T10:31:00.000Z"
-}
-```
- 
-### Приклад логів (LoggingInterceptor)
+### Тест пагінації
 ```text
-<вивід docker compose logs з рядками [HTTP] GET /api/products ...>
-LOG [HTTP] GET /api/products — 200 — 11ms
+<вивід curl GET /api/products?page=1&pageSize=5>
+{"data":{"items":[{"id":9,"name":"iPad Air","description":null,"price":"599.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.801Z","updatedAt":"2026-05-13T07:51:45.801Z"},{"id":8,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.799Z","updatedAt":"2026-05-13T07:51:45.799Z"},{"id":7,"name":"Galaxy S24","description":null,"price":"849.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.797Z","updatedAt":"2026-05-13T07:51:45.797Z"},{"id":6,"name":"iPhone 16","description":null,"price":"999.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.790Z","updatedAt":"2026-05-13T07:51:45.790Z"},{"id":5,"name":"MacBook Air M4","description":null,"price":"1299.99","stock":25,"isActive":true,"category":null,"createdAt":"2026-05-04T14:16:04.074Z","updatedAt":"2026-05-04T14:16:04.074Z"}],"meta":{"page":1,"pageSize":5,"total":7,"totalPages":2}},"statusCode":200,"timestamp":"2026-05-13T08:00:29.247Z"}
 ```
  
-### Тест помилки з traceId
+### Тест фільтрації
 ```text
-<вивід curl GET /api/products/999>
-{"error":{"code":404,"message":"Product #999 not found","traceId":"d294bc70-51e3-4424-aef4-e91b3daf33a8"},"timestamp":"2026-05-04T13:22:03.621Z"}
+<вивід curl GET /api/products?categoryId=1&minPrice=500>
+{"data":{"items":[{"id":9,"name":"iPad Air","description":null,"price":"599.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.801Z","updatedAt":"2026-05-13T07:51:45.801Z"},{"id":8,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.799Z","updatedAt":"2026-05-13T07:51:45.799Z"},{"id":7,"name":"Galaxy S24","description":null,"price":"849.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.797Z","updatedAt":"2026-05-13T07:51:45.797Z"},{"id":6,"name":"iPhone 16","description":null,"price":"999.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.790Z","updatedAt":"2026-05-13T07:51:45.790Z"},{"id":3,"name":"iPhone 16","description":null,"price":"999.99","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-04-16T06:26:51.332Z","updatedAt":"2026-04-16T06:26:51.332Z"}],"meta":{"page":1,"pageSize":10,"total":5,"totalPages":1}},"statusCode":200,"timestamp":"2026-05-13T08:02:18.350Z"}
+```
+ 
+### Тест пошуку
+```text
+<вивід curl GET /api/products?search=mac>
+{"data":{"items":[{"id":8,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.799Z","updatedAt":"2026-05-13T07:51:45.799Z"},{"id":5,"name":"MacBook Air M4","description":null,"price":"1299.99","stock":25,"isActive":true,"category":null,"createdAt":"2026-05-04T14:16:04.074Z","updatedAt":"2026-05-04T14:16:04.074Z"},{"id":4,"name":"MacBook Pro","description":null,"price":"2499.99","stock":10,"isActive":true,"category":null,"createdAt":"2026-04-26T12:54:50.572Z","updatedAt":"2026-04-26T12:54:50.572Z"}],"meta":{"page":1,"pageSize":10,"total":3,"totalPages":1}},"statusCode":200,"timestamp":"2026-05-13T08:02:39.257Z"}
+```
+ 
+### Тест кешування (Redis)
+```text
+<вивід docker compose exec redis redis-cli KEYS "products:*">
+products:{"page":1,"pageSize":10,"sort":"createdAt","order":"desc"}
+```
+ 
+### Тест інвалідації кешу
+```text
+<Redis KEYS до та після POST /api/products>
 ```
