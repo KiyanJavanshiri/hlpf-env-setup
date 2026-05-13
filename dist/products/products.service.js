@@ -17,15 +17,46 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const product_entity_1 = require("./product.entity");
+const cache_manager_1 = require("@nestjs/cache-manager");
 let ProductsService = class ProductsService {
     productRepo;
-    constructor(productRepo) {
+    cacheManager;
+    constructor(productRepo, cacheManager) {
         this.productRepo = productRepo;
+        this.cacheManager = cacheManager;
     }
-    async findAll() {
-        return this.productRepo.find({
-            relations: ['category'],
-        });
+    async findAll(query) {
+        const cacheKey = `products:${JSON.stringify(query)}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+        const { page = 1, pageSize = 10, sort = 'createdAt', order = 'desc', categoryId, minPrice, maxPrice, search, } = query;
+        const qb = this.productRepo
+            .createQueryBuilder('product')
+            .leftJoinAndSelect('product.category', 'category');
+        if (categoryId) {
+            qb.andWhere('category.id = :categoryId', { categoryId });
+        }
+        if (minPrice !== undefined) {
+            qb.andWhere('product.price >= :minPrice', { minPrice });
+        }
+        if (maxPrice !== undefined) {
+            qb.andWhere('product.price <= :maxPrice', { maxPrice });
+        }
+        if (search) {
+            qb.andWhere('product.name ILIKE :search', { search: `%${search}%` });
+        }
+        qb.orderBy(`product.${sort}`, order.toUpperCase());
+        const skip = (page - 1) * pageSize;
+        qb.skip(skip).take(pageSize);
+        const [items, total] = await qb.getManyAndCount();
+        const result = {
+            items,
+            meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
+        };
+        await this.cacheManager.set(cacheKey, result, 60_000);
+        return result;
     }
     async findOne(id) {
         const product = await this.productRepo.findOne({
@@ -45,7 +76,9 @@ let ProductsService = class ProductsService {
             stock: dto.stock ?? 0,
             category: dto.categoryId ? { id: dto.categoryId } : null,
         });
-        return this.productRepo.save(product);
+        const saved = await this.productRepo.save(product);
+        await this.clearProductsCache();
+        return saved;
     }
     async update(id, dto) {
         const product = await this.findOne(id);
@@ -60,17 +93,23 @@ let ProductsService = class ProductsService {
         if (dto.categoryId !== undefined) {
             product.category = { id: dto.categoryId };
         }
-        return this.productRepo.save(product);
+        const saved = await this.productRepo.save(product);
+        await this.clearProductsCache();
+        return saved;
     }
     async remove(id) {
         const product = await this.findOne(id);
         await this.productRepo.remove(product);
+        await this.clearProductsCache();
+    }
+    async clearProductsCache() {
     }
 };
 exports.ProductsService = ProductsService;
 exports.ProductsService = ProductsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(product_entity_1.Product)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __param(1, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __metadata("design:paramtypes", [typeorm_2.Repository, Object])
 ], ProductsService);
 //# sourceMappingURL=products.service.js.map
