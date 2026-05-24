@@ -2,53 +2,84 @@
 - Name: Джаваншірі Кіян
 - Group: 232/1 оф
  
-## Практичне заняття №7 — Redis + Pagination + Filtering
+## MiniShop API — Фінальний проєкт
  
-### Запуск проекту
+REST API інтернет-магазину на NestJS + PostgreSQL + Redis.
+ 
+### Технології
+- NestJS + TypeScript
+- PostgreSQL + TypeORM (міграції, QueryBuilder)
+- Redis (кешування з інвалідацією)
+- JWT автентифікація + RBAC авторизація
+- class-validator + class-transformer
+- Swagger / OpenAPI
+ 
+### Запуск
 ```bash
 cp .env.example .env
 docker compose up --build
 docker compose run --rm app npm run seed
 ```
  
-### API: GET /api/products
+### Swagger UI
+http://localhost:3000/api/docs
+![orders swagger](swagger_orders.png)
  
-| Параметр | Тип | Default | Опис |
-|----------|-----|---------|------|
-| page | number | 1 | Номер сторінки |
-| pageSize | number | 10 | Елементів на сторінку (max 100) |
-| sort | string | createdAt | Поле сортування |
-| order | asc/desc | desc | Напрямок |
-| categoryId | number | - | Фільтр за категорією |
-| minPrice | number | - | Мінімальна ціна |
-| maxPrice | number | - | Максимальна ціна |
-| search | string | - | Пошук за назвою (ILIKE) |
+### API Endpoints
  
-### Тест пагінації
+#### Auth
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| POST | /auth/register | - | Реєстрація |
+| POST | /auth/login | - | Логін → JWT |
+ 
+#### Categories
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| GET | /api/categories | - | Список |
+| GET | /api/categories/:id | - | Одна |
+| POST | /api/categories | admin | Створити |
+| PATCH | /api/categories/:id | admin | Оновити |
+| DELETE | /api/categories/:id | admin | Видалити |
+ 
+#### Products
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| GET | /api/products | - | Список + pagination + filter |
+| GET | /api/products/:id | - | Один |
+| POST | /api/products | admin | Створити |
+| PATCH | /api/products/:id | admin | Оновити |
+| DELETE | /api/products/:id | admin | Видалити |
+ 
+#### Orders
+| Method | URL | Auth | Опис |
+|--------|-----|------|------|
+| POST | /api/orders | user | Створити замовлення |
+| GET | /api/orders | user | Мої / Всі (admin) |
+| GET | /api/orders/:id | user | Одне (ownership) |
+| PATCH | /api/orders/:id/status | admin | Змінити статус |
+| DELETE | /api/orders/:id | admin | Видалити |
+ 
+### Тест створення замовлення
 ```text
-<вивід curl GET /api/products?page=1&pageSize=5>
-{"data":{"items":[{"id":9,"name":"iPad Air","description":null,"price":"599.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.801Z","updatedAt":"2026-05-13T07:51:45.801Z"},{"id":8,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.799Z","updatedAt":"2026-05-13T07:51:45.799Z"},{"id":7,"name":"Galaxy S24","description":null,"price":"849.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.797Z","updatedAt":"2026-05-13T07:51:45.797Z"},{"id":6,"name":"iPhone 16","description":null,"price":"999.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.790Z","updatedAt":"2026-05-13T07:51:45.790Z"},{"id":5,"name":"MacBook Air M4","description":null,"price":"1299.99","stock":25,"isActive":true,"category":null,"createdAt":"2026-05-04T14:16:04.074Z","updatedAt":"2026-05-04T14:16:04.074Z"}],"meta":{"page":1,"pageSize":5,"total":7,"totalPages":2}},"statusCode":200,"timestamp":"2026-05-13T08:00:29.247Z"}
+<вивід curl POST /api/orders>
+{"data":{"id":1,"status":"pending","totalPrice":"120.00","items":[{"id":1,"quantity":2,"price":"50.00","product":{"id":1,"name":"iPhone 15"}},{"id":2,"quantity":1,"price":"20.00","product":{"id":5,"name":"Headphones"}}],"createdAt":"2026-05-24T10:03:00.000Z"},"statusCode":201,"timestamp":"2026-05-24T10:03:01.000Z"}
 ```
  
-### Тест фільтрації
+### Тест ownership (403)
 ```text
-<вивід curl GET /api/products?categoryId=1&minPrice=500>
-{"data":{"items":[{"id":9,"name":"iPad Air","description":null,"price":"599.00","stock":30,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.801Z","updatedAt":"2026-05-13T07:51:45.801Z"},{"id":8,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.799Z","updatedAt":"2026-05-13T07:51:45.799Z"},{"id":7,"name":"Galaxy S24","description":null,"price":"849.00","stock":40,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.797Z","updatedAt":"2026-05-13T07:51:45.797Z"},{"id":6,"name":"iPhone 16","description":null,"price":"999.00","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.790Z","updatedAt":"2026-05-13T07:51:45.790Z"},{"id":3,"name":"iPhone 16","description":null,"price":"999.99","stock":50,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-04-16T06:26:51.332Z","updatedAt":"2026-04-16T06:26:51.332Z"}],"meta":{"page":1,"pageSize":10,"total":5,"totalPages":1}},"statusCode":200,"timestamp":"2026-05-13T08:02:18.350Z"}
+<вивід curl GET /api/orders/:id з чужим токеном>
+{"error":{"code":403,"message":"You can only view your own orders","traceId":"a1b2c3d4-e5f6-7890-abcd-ef1234567890"},"timestamp":"2026-05-24T10:06:00.000Z"}
 ```
  
-### Тест пошуку
+### Тест зміни статусу
 ```text
-<вивід curl GET /api/products?search=mac>
-{"data":{"items":[{"id":8,"name":"MacBook Pro","description":null,"price":"2499.00","stock":15,"isActive":true,"category":{"id":1,"name":"Electronics","description":"Gadgets and devices","createdAt":"2026-04-05T15:10:02.065Z"},"createdAt":"2026-05-13T07:51:45.799Z","updatedAt":"2026-05-13T07:51:45.799Z"},{"id":5,"name":"MacBook Air M4","description":null,"price":"1299.99","stock":25,"isActive":true,"category":null,"createdAt":"2026-05-04T14:16:04.074Z","updatedAt":"2026-05-04T14:16:04.074Z"},{"id":4,"name":"MacBook Pro","description":null,"price":"2499.99","stock":10,"isActive":true,"category":null,"createdAt":"2026-04-26T12:54:50.572Z","updatedAt":"2026-04-26T12:54:50.572Z"}],"meta":{"page":1,"pageSize":10,"total":3,"totalPages":1}},"statusCode":200,"timestamp":"2026-05-13T08:02:39.257Z"}
+<вивід curl PATCH /api/orders/:id/status>
+{"data":{"id":1,"status":"confirmed","totalPrice":"120.00"},"statusCode":200,"timestamp":"2026-05-24T10:08:00.000Z"}
 ```
  
-### Тест кешування (Redis)
+### Тест insufficient stock
 ```text
-<вивід docker compose exec redis redis-cli KEYS "products:*">
-products:{"page":1,"pageSize":10,"sort":"createdAt","order":"desc"}
-```
- 
-### Тест інвалідації кешу
-```text
-<Redis KEYS до та після POST /api/products>
+<вивід curl POST /api/orders з quantity > stock>
+{"error":{"code":400,"message":"Insufficient stock for \"iPhone 15\": available 8, requested 99999","traceId":"99887766-5544-3322-1100-aabbccddeeff"},"timestamp":"2026-05-24T10:10:00.000Z"}
 ```
