@@ -67,7 +67,7 @@ async function seed() {
         for (const p of products) {
             const suffix = i > 0 ? ` v${i + 1}` : '';
             await ds.query(`INSERT INTO products
-       	(name, price, stock, "categoryId")
+       	(name, price, stock, "category_id")
      	VALUES ($1, $2, $3, $4)
      	ON CONFLICT DO NOTHING`, [`${p.name}${suffix}`, p.price + i * 10, p.stock, p.cat]);
         }
